@@ -1,0 +1,119 @@
+<head>
+<title>EOS Chart</title>
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #020d1c;
+    }
+    #chartContainer {
+        height: 100%;
+        width: 100%;
+    }
+</style>
+</head>
+
+<body>
+    <div id="chartContainer" style="height:100%; width: 100%;"></div>
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <script>
+        var symbol = "R_100";
+        var decimals = 2;
+        var ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+
+        ws.onopen = function (evt) {
+            ws.send(JSON.stringify({ ticks: symbol }));
+        };
+
+
+        var dps = [];
+        var dataLength = 60;
+        var chart = new CanvasJS.Chart("chartContainer", {
+            theme: "light2", // "light1", "light2", "dark1", "dark2"
+            animationEnabled: true,
+            backgroundColor: "#020d1c",
+            data: [{
+                type: "line",
+                dataPoints: dps
+            }],
+            axisY:{
+                gridDashType: "dot",
+                gridColor: "white",
+                gridThickness: 0.4,
+                labelFontSize: 12
+            },
+            axisX:{
+                gridDashType: "dot",
+                gridThickness: 0.4,
+                labelFontSize: 12,
+                tickColor: "#293F56",
+                lineColor:"#293F56"
+            }
+        });
+
+
+        var xval = 1;
+        var yval = 1;
+
+        ws.onmessage = function (msg) {
+            var data = JSON.parse(msg.data);
+            var digit = Number(data.tick.quote).toFixed(decimals).slice(-1);
+
+
+           // console.log(digit);
+
+            if (digit % 2 == 0) {
+                yval += 1;
+                dps.push({
+                    x: xval,
+                    y: yval,
+                    indexLabel: digit,
+                    indexLabelFontWeight: "bold",
+                    indexLabelFontSize: 16,
+                    indexLabelFontColor: "#008c20",
+                    markerSize: 6,
+                    markerType: "circle",
+                    markerColor: "#008c20",
+                    lineColor: "#3399ff", 
+                lineDashType: "shortDot",
+                lineThickness: 0.3
+                   // lineColor: "green",
+                });
+                xval += 1;
+
+                if (dps.length > dataLength) {
+                    dps.shift();
+                }
+                chart.render();
+            } else {
+                yval -= 1;
+                dps.push({
+                    x: xval,
+                    y: yval,
+                    indexLabel: digit,
+                    indexLabelFontWeight: "bold",
+                    indexLabelFontSize: 16,
+                    indexLabelFontColor: "red",
+                    markerSize: 6,
+                    markerType: "circle",
+                    markerColor: "red",
+                    lineColor: "#3399ff", 
+                lineDashType: "shortDot",
+                lineThickness: 0.3
+                   // lineColor: "red",
+                });
+                xval += 1;
+
+                if (dps.length > dataLength) {
+                    dps.shift();
+                }
+                chart.render();
+            }
+
+
+
+
+        }
+    </script>
+</body>
