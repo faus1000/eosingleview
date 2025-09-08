@@ -1,0 +1,127 @@
+<head>
+  <title>EO-Chart CR-v100</title>
+</head>
+
+<body>
+  <div id="chartContainer" style="height: 100%; width: 100%"></div>
+  <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+  <script>
+    var symbol = "R_100";
+    var decimals = 2;
+    var ws = new WebSocket("wss://ws.binaryws.com/websockets/v3?app_id=1089");
+
+    ws.onopen = function (evt) {
+      ws.send(JSON.stringify({ ticks: symbol }));
+    };
+
+    var dps = [];
+    var dataLength = 30;
+    var chart = new CanvasJS.Chart("chartContainer", {
+      theme: "light1", // "light1", "light2", "dark1", "dark2"
+      animationEnabled: true,
+      data: [
+        {
+          type: "line",
+          dataPoints: dps,
+        },
+      ],
+      axisY: {
+        gridDashType: "dot",
+        gridColor: "white",
+        gridThickness: 0.4,
+        labelFontSize: 12,
+      },
+      axisX: {
+        gridDashType: "dot",
+        gridThickness: 0.4,
+        labelFontSize: 12,
+        tickColor: "#293F56",
+        lineColor: "#293F56",
+      },
+    });
+
+    var xval = 1;
+    var yval = 1;
+
+    
+    function trendAnalyzer(list, digit) {
+      if (
+        (list[list.length - 2] % 2 == 0 && list[list.length - 1] % 2 != 0) ||
+        (list[list.length - 2] % 2 != 0 && list[list.length - 1] % 2 == 0)
+      ) {
+        //  trend.push("R");
+        ShowData(digit, "r");
+      } else if (
+        (list[list.length - 2] % 2 == 0 && list[list.length - 1] % 2 == 0) ||
+        (list[list.length - 2] % 2 != 0 && list[list.length - 1] % 2 != 0)
+      ) {
+        // trend.push("C");
+        ShowData(digit, "c");
+      }
+      // return trend;
+    }
+
+    function ShowData(digit, label) {
+      if (digit % 2 == 0) {
+        yval += 1;
+        dps.push({
+          x: xval,
+          y: yval,
+          indexLabel: digit+label,
+          indexLabelFontWeight: "bold",
+          indexLabelFontSize: 20,
+          indexLabelFontColor: "#008c20",
+          markerSize: 6,
+          markerType: "circle",
+          markerColor: "#008c20",
+          lineColor: "#0354A3",
+          lineDashType: "shortDot",
+          lineThickness: 0.5,
+          // lineColor: "green",
+        });
+        xval += 1;
+
+        if (dps.length > dataLength) {
+          dps.shift();
+        }
+        chart.render();
+      } else {
+        yval -= 1;
+        dps.push({
+          x: xval,
+          y: yval,
+          indexLabel: digit+label,
+          indexLabelFontWeight: "bold",
+          indexLabelFontSize: 20,
+          indexLabelFontColor: "red",
+          markerSize: 6,
+          markerType: "circle",
+          markerColor: "red",
+          lineColor: "#0354A3",
+          lineDashType: "shortDot",
+          lineThickness: 0.5,
+          // lineColor: "red",
+        });
+        xval += 1;
+
+        if (dps.length > dataLength) {
+          dps.shift();
+        }
+        chart.render();
+      }
+    }
+
+    let dlist = [];
+
+    ws.onmessage = function (msg) {
+      var data = JSON.parse(msg.data);
+      var digit = Number(data.tick.quote).toFixed(decimals).slice(-1);
+      dlist.push(digit);
+      if (dlist.length > 20) {
+        dlist.splice(0, dlist.length - 20);
+      }
+      // console.log(digit);
+      trendAnalyzer(dlist, digit);
+    };
+  </script>
+</body>
